@@ -8,7 +8,6 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"
     />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
     <link
       rel="stylesheet"
@@ -212,6 +211,7 @@
         type="number"
         id="postcode"
         disabled
+        placeholder="⏳ กำลังโหลดข้อมูลระบบ..."
         oninput="handleZipcode()"
       />
 
@@ -268,22 +268,19 @@
       </button>
     </div>
 
-   <script>
+    <script>
+      // ⚠️ ระบุ URL ของ Web App (GAS) ตัวเดิมของคุณที่นี่
       const GAS_URL = 'https://script.google.com/macros/s/AKfycbwjKbt7wDvTXKeA91El8NSHsYLinuKh2WQsYVLp15KLz9pvhUqyEkW6VLlNKwFaoPuMmQ/exec';
-      const LIFF_ID = '2009821890-7GqpquZm';
       
       let ZIP_MAP = {};
-      let userId = '';
+      let userId = 'Guest'; // เปลี่ยนค่าเริ่มต้นเป็น Guest เนื่องจากไม่ได้ล็อกอินผ่าน LINE แล้ว
       let selectedSlot = '';
       let selectedDistrict = '';
       let selectedProvince = '';
       let datePickerInstance = null; 
 
       async function init() {
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) liff.login();
-        const profile = await liff.getProfile();
-        userId = profile.userId;
+        // ปลดโค้ดส่วน LINE LIFF ออกทั้งหมด เพื่อให้สามารถรันบนบราวเซอร์ทั่วไปได้ทันที
         fetchZipData();
       }
 
@@ -348,12 +345,12 @@
             }
 
           } else {
-            distEl.innerHTML = '<option value="">❌ ไม่พบข้อมูลรหัสไปรษณีย์นี้</option>';
+            distEl.innerHTML = '<option value="">❌ 不พบข้อมูลรหัสไปรษณีย์นี้</option>';
             distEl.disabled = true;
             provEl.value = '';
             dateEl.disabled = true;
             document.getElementById('quantity').disabled = true;
-            dateLbl.innerText = '⚠️ ไม่พบข้อมูลรหัสไปรษณีย์ที่ระบุ';
+            dateLbl.innerText = '⚠️ 不พบข้อมูลรหัสไปรษณีย์ที่ระบุ';
             dateLbl.style.color = '#d9534f';
             document.getElementById('slotList').innerHTML = '';
             if(datePickerInstance) datePickerInstance.clear();
@@ -392,7 +389,6 @@
         const restrictedProvinces = ['นราธิวาส', 'ปัตตานี', 'ยะลา'];
         const restrictedDistricts = ['เกาะสมุย', 'เกาะพะงัน'];
         if (restrictedProvinces.includes(prov) || restrictedDistricts.includes(dist)) {
-          //Alert นอกพื้นที่ให้บริการ
           Swal.fire({
             title: 'อยู่นอกพื้นที่ให้บริการ',
             text: 'ขออภัย พื้นที่เกาะ หรือ 3 จังหวัดใต้ ไม่สามารถจัดส่งได้',
@@ -445,7 +441,6 @@
 
         const selectedDateObj = new Date(date);
         if (selectedDateObj.getDay() === 0) {
-           //Alert เลือกวันอาทิตย์
            Swal.fire({
              title: 'หยุดวันอาทิตย์',
              text: 'ขออภัยครับ วันอาทิตย์ไม่มีรอบจัดส่ง กรุณาเลือกวันอื่น',
@@ -460,7 +455,6 @@
         }
 
         if (date < dateEl.min) {
-          // Alert เลือกวันผิดเงื่อนไข
           Swal.fire({
              title: 'วันที่ไม่ถูกต้อง',
              text: 'วันที่เลือกไม่ถูกต้องตามเงื่อนไขระยะเวลาขั้นต่ำ',
@@ -515,7 +509,6 @@
       async function submitBooking() {
         const qty = parseInt(document.getElementById('quantity').value) || 0;
         if (qty <= 0) {
-           // Alert ใส่จำนวนผิด
            Swal.fire({ title: 'จำนวนไม่ถูกต้อง', text: 'กรุณาระบุจำนวนสินค้าให้ถูกต้อง', icon: 'warning', confirmButtonText: 'ตกลง' });
            return;
         }
@@ -541,7 +534,6 @@
           });
           const result = await res.json();
           if (result.result) {
-            // Alert จองสำเร็จ
             Swal.fire({
               title: 'จองคิวสำเร็จ!',
               text: 'รหัสจอง: ' + result.result,
@@ -551,11 +543,11 @@
               allowOutsideClick: false 
             }).then((res) => {
               if (res.isConfirmed) {
-                liff.closeWindow(); 
+                // เปลี่ยนจากการปิดหน้าต่าง LIFF เป็นการรีเฟรชหน้าเว็บเพื่อเคลียร์ค่าใหม่
+                window.location.reload();
               }
             });
           } else {
-            //  Alert เกิดข้อผิดพลาดจากฝั่งเซิร์ฟเวอร์
             Swal.fire({
               title: 'เกิดข้อผิดพลาด',
               text: result.error,
@@ -568,7 +560,6 @@
             getSlots(); 
           }
         } catch (e) {
-          //Alert การเชื่อมต่อขัดข้อง
           Swal.fire({
             title: 'การเชื่อมต่อขัดข้อง',
             text: 'กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง',
